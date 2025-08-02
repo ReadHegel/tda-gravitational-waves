@@ -9,18 +9,23 @@ class Clasificator(nn.Module):
         self.with_betti = with_betti
 
         self.signal_backbone = nn.Sequential(
-            *[
-                nn.Conv1d(1, 64, kernel_size=16, stride=2),
-                nn.ReLU(),
-                nn.MaxPool1d(4),
-                nn.Conv1d(64, 128, kernel_size=16, stride=2),
-                nn.ReLU(),
-                nn.MaxPool1d(4),
-                nn.Conv1d(128, 128, kernel_size=16, stride=2),
-                nn.ReLU(),
-                nn.MaxPool1d(4),
-            ]
+            nn.Conv1d(1, 64, kernel_size=16, stride=1),  
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=4),      
+
+            nn.Conv1d(64, 128, kernel_size=16, stride=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=4),       
+
+            nn.Conv1d(128, 256, kernel_size=16, stride=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=4),       
+
+            nn.Conv1d(256, 512, kernel_size=32, stride=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=4), 
         )
+
         self.betti_curve_backbone = nn.Sequential(
             *[
                 nn.Conv1d(2, 8, kernel_size=3, padding=1),
@@ -33,11 +38,13 @@ class Clasificator(nn.Module):
         )
         self.classification_head = nn.Sequential(
             *[
-                nn.LazyLinear(out_features=300),
+                nn.LazyLinear(out_features=128),
                 nn.ReLU(),
-                nn.Linear(300, 100),
+                nn.Linear(128, 128),
                 nn.ReLU(),
-                nn.Linear(100, 2),
+                nn.Linear(128, 64),
+                nn.ReLU(),
+                nn.Linear(64, 2),
             ]
         )
 
@@ -46,8 +53,6 @@ class Clasificator(nn.Module):
             self.signal_backbone(signal),
             start_dim=1,
         )
-        
-        print("singal_embedded", signal_embedded.shape)
 
         if self.with_betti:
             betti_curve_embedded = torch.flatten(
